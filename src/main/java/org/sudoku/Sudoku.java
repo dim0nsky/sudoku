@@ -19,7 +19,7 @@ public class Sudoku {
   private Map<Lane, Set<Lane>> squaresToLanes = new HashMap<>(9);
 
   public Sudoku(Set<Cell> cells, Lane[] hlanes, Lane[] vlanes, Lane[] squares) {
-    this.cells = cells;
+    this.cells.addAll(cells);
     this.hlanes = hlanes;
     this.vlanes = vlanes;
     this.squares = squares;
