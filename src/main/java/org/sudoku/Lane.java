@@ -19,12 +19,11 @@ public class Lane {
     this.type = type;
   }
 
-  public Set<Cell> remove(Cell valueCell) {
+  public Set<Cell> collectChangedCells(Byte value) {
     Set<Cell> result = new HashSet<>();
-    Byte value = valueCell.getValue();
     for (Cell cell : cells) {
-      if(cell.equals(valueCell)) continue;
-      result.addAll(cell.remove(value));
+      if (cell.removePossibleNumber(value))
+        result.add(cell);
     }
     return result;
   }
@@ -42,10 +41,7 @@ public class Lane {
     for (Cell cell : cells) {
       Set<Byte> possibleNumbers = cell.getPossibleNumbers();
       for (Byte number : possibleNumbers) {
-        Set<Cell> cellsForNumber = numbersToCells.get(number);
-        if (cellsForNumber == null) {
-          cellsForNumber = new HashSet<>();
-        }
+        Set<Cell> cellsForNumber = numbersToCells.getOrDefault(number, new HashSet<>());
         cellsForNumber.add(cell);
         numbersToCells.put(number, cellsForNumber);
       }
@@ -55,7 +51,7 @@ public class Lane {
       Set<Cell> cellsForNumber = numberEntry.getValue();
       if (cellsForNumber.size() == 1) {
         Byte number = numberEntry.getKey();
-        Set<Cell> cells = cellsForNumber.stream().findFirst().get().set(number);
+        Set<Cell> cells = cellsForNumber.stream().findFirst().get().setNumberValue(number);
         results.addAll(cells);
       }
     }
@@ -83,8 +79,8 @@ public class Lane {
 
         for(Byte num : numbers) {
           for (Cell cell : rowcells) {
-            Set<Cell> removedCells = cell.remove(num);
-            results.addAll(removedCells);
+            if (cell.removePossibleNumber(num))
+              results.add(cell);
           }
         }
       }

@@ -1,36 +1,26 @@
 package org.sudoku;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 public class Sudoku {
 
-  private Set<Cell> cells = new TreeSet<>();
-  private Lane[] hlanes;
-  private Lane[] squares;
-  private Lane[] vlanes;
-  private Set<Lane> lanes;
-  private Map<Lane, Set<Lane>> squaresToLanes = new HashMap<>(9);
+  private final Set<Cell> cells = new TreeSet<>();
+  private final Lane[] hlanes;
+  private final Set<Lane> lanes = new HashSet<>(27);
+  private final Map<Lane, Set<Lane>> squaresToLanes = new HashMap<>(9);
 
   public Sudoku(Set<Cell> cells, Lane[] hlanes, Lane[] vlanes, Lane[] squares) {
     this.cells.addAll(cells);
     this.hlanes = hlanes;
-    this.vlanes = vlanes;
-    this.squares = squares;
-    this.lanes = Arrays.stream(hlanes).collect(Collectors.toSet());
-    lanes.addAll(Arrays.stream(vlanes).collect(Collectors.toSet()));
-    lanes.addAll(Arrays.stream(squares).collect(Collectors.toSet()));
+    this.lanes.addAll(Arrays.asList(hlanes));
+    this.lanes.addAll(Arrays.asList(vlanes));
+    this.lanes.addAll(Arrays.asList(squares));
     for(Lane square: squares){
       HashSet<Lane> lanesMapping = new HashSet<>();
       squaresToLanes.put(square, lanesMapping);
       for(Cell cell : square.getCells()){
-        Set<Lane> cellLanes = cell.getLanes();
+        Set<Lane> cellLanes = cell.getBelongToLanes();
         cellLanes.remove(square);
         lanesMapping.addAll(cellLanes);
       }
@@ -38,12 +28,12 @@ public class Sudoku {
   }
 
   public void setCellValue(int x, int y, int value) {
-    Set<Cell> cells = hlanes[y - 1].get((byte) (x-1)).set((byte) value);
-    evaluate(cells);
+    Set<Cell> cells = hlanes[y - 1].get((byte) (x-1)).setNumberValue((byte) value);
+    reorderCells(cells);
   }
 
-  public void evaluate(Set<Cell> cells) {
-    if(cells==null || cells.isEmpty()) return;
+  public void reorderCells(Set<Cell> cells) {
+    if (cells==null || cells.isEmpty()) return;
     this.cells.removeAll(cells);
     this.cells.addAll(cells);
   }
@@ -52,21 +42,10 @@ public class Sudoku {
     boolean result = true;
     while (result) {
       result = false;
-      Cell firstCell = cells.stream().findFirst().get();
-
-      while (firstCell != null && firstCell.size() == 1) {
-        result=true;
-        Byte value = firstCell.getPossibleNumbers().stream().findFirst().get();
-        Set<Cell> cells = firstCell.set(value);
-        evaluate(cells);
-        firstCell = this.cells.stream().findFirst().get();
-      }
-
-      if(result) continue;
-
+      checkCellsWithSinglePossibleNumber();
       for (Lane lane : lanes) {
         Set<Cell> cells = lane.checkSingleValue();
-        evaluate(cells);
+        reorderCells(cells);
         result = result || !cells.isEmpty();
       }
 
@@ -74,59 +53,72 @@ public class Sudoku {
 
       for (Lane lane : lanes) {
         Set<Cell> cells = lane.checkCellsWithMatchingNumbers();
-        evaluate(cells);
+        reorderCells(cells);
         result = result || !cells.isEmpty();
       }
 
       if(result) continue;
 
-      Set<Cell> cells = new HashSet<>();
+      Set<Cell> changedCells = new HashSet<>();
       for(Entry<Lane, Set<Lane>> squareMap : squaresToLanes.entrySet()){
         Lane square = squareMap.getKey();
         for(Lane lane: squareMap.getValue()) {
-          Set<Cell> intersect = square.intersect(lane);
-          Set<Cell> substractLaneFromSquare = square.substract(lane);
-          Set<Cell> substractSquareFromLane = lane.substract(square);
+          Set<Cell> intersectionCells = square.intersect(lane);
+          Set<Cell> substractionLaneFromSquareCells = square.substract(lane);
+          Set<Cell> substractionSquareFromLaneCells = lane.substract(square);
 
-          Set<Byte> intersectNumbers = new HashSet<>();
-          Set<Byte> substractLaneFromSquareNumbers = new HashSet<>();
-          Set<Byte> substractSquareFromLaneNumbers = new HashSet<>();
+          Set<Byte> intersectionNumbers = new HashSet<>();
+          Set<Byte> substractionLaneFromSquareNumbers = new HashSet<>();
+          Set<Byte> substractionSquareFromLaneNumbers = new HashSet<>();
 
-          for(Cell cell : intersect) {
+          for(Cell cell : intersectionCells) {
             Set<Byte> possibleNumbers = cell.getPossibleNumbers();
-            intersectNumbers.addAll(possibleNumbers);
+            intersectionNumbers.addAll(possibleNumbers);
           }
 
-          for(Cell cell : substractLaneFromSquare) {
+          for(Cell cell : substractionLaneFromSquareCells) {
             Set<Byte> possibleNumbers = cell.getPossibleNumbers();
-            substractLaneFromSquareNumbers.addAll(possibleNumbers);
+            substractionLaneFromSquareNumbers.addAll(possibleNumbers);
           }
 
-          for(Cell cell : substractSquareFromLane) {
+          for(Cell cell : substractionSquareFromLaneCells) {
             Set<Byte> possibleNumbers = cell.getPossibleNumbers();
-            substractSquareFromLaneNumbers.addAll(possibleNumbers);
+            substractionSquareFromLaneNumbers.addAll(possibleNumbers);
           }
 
-          HashSet<Byte> cloneIntersect = new HashSet<>(intersectNumbers);
-          cloneIntersect.removeAll(substractLaneFromSquareNumbers);
-          if(!cloneIntersect.isEmpty()){
-            clean(cells, substractSquareFromLane, cloneIntersect);
+          HashSet<Byte> clonedIntersectionNumbers = new HashSet<>(intersectionNumbers);
+          clonedIntersectionNumbers.removeAll(substractionLaneFromSquareNumbers);
+          if(!clonedIntersectionNumbers.isEmpty()){
+            removeNumbersFromCells(changedCells, substractionSquareFromLaneCells, clonedIntersectionNumbers);
           }
-          intersectNumbers.removeAll(substractSquareFromLaneNumbers);
-          if(!intersectNumbers.isEmpty()) {
-            clean(cells, substractLaneFromSquare, intersectNumbers);
+          intersectionNumbers.removeAll(substractionSquareFromLaneNumbers);
+          if(!intersectionNumbers.isEmpty()) {
+            removeNumbersFromCells(changedCells, substractionLaneFromSquareCells, intersectionNumbers);
           }
         }
       }
-      evaluate(cells);
-      result = result || !cells.isEmpty();
+      reorderCells(changedCells);
+      result = !changedCells.isEmpty();
     }
   }
 
-  private void clean(Set<Cell> aggregator, Set<Cell> cells, Set<Byte> numbers) {
+  private void checkCellsWithSinglePossibleNumber() {
+    Iterator<Cell> cellIterator = cells.stream().filter(cell -> cell.possibleNumbersSize() == 1).iterator();
+
+    while (cellIterator.hasNext()) {
+      Cell firstCell = cellIterator.next();
+      Byte value = firstCell.getPossibleNumbers().stream().findFirst().get();
+      Set<Cell> updatedCells = firstCell.setNumberValue(value);
+      reorderCells(updatedCells);
+      cellIterator = cells.stream().filter(cell -> cell.possibleNumbersSize() == 1).iterator();
+    }
+  }
+
+  private void removeNumbersFromCells(Set<Cell> changedCellsCollector, Set<Cell> cells, Set<Byte> numbers) {
     for(Cell cell: cells) {
       for (Byte number : numbers) {
-        aggregator.addAll(cell.remove(number));
+        if (cell.removePossibleNumber(number))
+          changedCellsCollector.add(cell);
       }
     }
   }
@@ -143,14 +135,9 @@ public class Sudoku {
   private static String getSeparatorLane() {
     StringBuilder sb = new StringBuilder();
     sb.append("|");
-    for(int i=0;i<79+10;i++) {
-      sb.append("-");
-    }
+    sb.append("-".repeat(79 + 10));
     sb.append("|");
     return sb.toString();
   }
 
-  public void evaluateRule1(){
-
-  }
 }

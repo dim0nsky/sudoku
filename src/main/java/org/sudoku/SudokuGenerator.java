@@ -65,7 +65,7 @@ public class SudokuGenerator {
     vLane.add(cell);
     hLane.add(cell);
     square.add(cell);
-    cell.setLanes(vLane, hLane, square);
+    cell.setBelongToLanes(vLane, hLane, square);
     return cell;
   }
 }
