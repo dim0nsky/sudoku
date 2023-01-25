@@ -1,143 +1,150 @@
 package org.sudoku;
 
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 public class Sudoku {
+    public List<Cell> cells;
 
-  private final Set<Cell> cells = new TreeSet<>();
-  private final Lane[] hlanes;
-  private final Set<Lane> lanes = new HashSet<>(27);
-  private final Map<Lane, Set<Lane>> squaresToLanes = new HashMap<>(9);
-
-  public Sudoku(Set<Cell> cells, Lane[] hlanes, Lane[] vlanes, Lane[] squares) {
-    this.cells.addAll(cells);
-    this.hlanes = hlanes;
-    this.lanes.addAll(Arrays.asList(hlanes));
-    this.lanes.addAll(Arrays.asList(vlanes));
-    this.lanes.addAll(Arrays.asList(squares));
-    for(Lane square: squares){
-      HashSet<Lane> lanesMapping = new HashSet<>();
-      squaresToLanes.put(square, lanesMapping);
-      for(Cell cell : square.getCells()){
-        Set<Lane> cellLanes = cell.getBelongToLanes();
-        cellLanes.remove(square);
-        lanesMapping.addAll(cellLanes);
-      }
-    }
-  }
-
-  public void setCellValue(int x, int y, int value) {
-    Set<Cell> cells = hlanes[y - 1].get((byte) (x-1)).setNumberValue((byte) value);
-    reorderCells(cells);
-  }
-
-  public void reorderCells(Set<Cell> cells) {
-    if (cells==null || cells.isEmpty()) return;
-    this.cells.removeAll(cells);
-    this.cells.addAll(cells);
-  }
-
-  public void solve() {
-    boolean result = true;
-    while (result) {
-      result = false;
-      checkCellsWithSinglePossibleNumber();
-      for (Lane lane : lanes) {
-        Set<Cell> cells = lane.checkSingleValue();
-        reorderCells(cells);
-        result = result || !cells.isEmpty();
-      }
-
-      if(result) continue;
-
-      for (Lane lane : lanes) {
-        Set<Cell> cells = lane.checkCellsWithMatchingNumbers();
-        reorderCells(cells);
-        result = result || !cells.isEmpty();
-      }
-
-      if(result) continue;
-
-      Set<Cell> changedCells = new HashSet<>();
-      for(Entry<Lane, Set<Lane>> squareMap : squaresToLanes.entrySet()){
-        Lane square = squareMap.getKey();
-        for(Lane lane: squareMap.getValue()) {
-          Set<Cell> intersectionCells = square.intersect(lane);
-          Set<Cell> substractionLaneFromSquareCells = square.substract(lane);
-          Set<Cell> substractionSquareFromLaneCells = lane.substract(square);
-
-          Set<Byte> intersectionNumbers = new HashSet<>();
-          Set<Byte> substractionLaneFromSquareNumbers = new HashSet<>();
-          Set<Byte> substractionSquareFromLaneNumbers = new HashSet<>();
-
-          for(Cell cell : intersectionCells) {
-            Set<Byte> possibleNumbers = cell.getPossibleNumbers();
-            intersectionNumbers.addAll(possibleNumbers);
-          }
-
-          for(Cell cell : substractionLaneFromSquareCells) {
-            Set<Byte> possibleNumbers = cell.getPossibleNumbers();
-            substractionLaneFromSquareNumbers.addAll(possibleNumbers);
-          }
-
-          for(Cell cell : substractionSquareFromLaneCells) {
-            Set<Byte> possibleNumbers = cell.getPossibleNumbers();
-            substractionSquareFromLaneNumbers.addAll(possibleNumbers);
-          }
-
-          HashSet<Byte> clonedIntersectionNumbers = new HashSet<>(intersectionNumbers);
-          clonedIntersectionNumbers.removeAll(substractionLaneFromSquareNumbers);
-          if(!clonedIntersectionNumbers.isEmpty()){
-            removeNumbersFromCells(changedCells, substractionSquareFromLaneCells, clonedIntersectionNumbers);
-          }
-          intersectionNumbers.removeAll(substractionSquareFromLaneNumbers);
-          if(!intersectionNumbers.isEmpty()) {
-            removeNumbersFromCells(changedCells, substractionLaneFromSquareCells, intersectionNumbers);
-          }
+    public Sudoku(){
+        List<Cell> initCells = new ArrayList<Cell>();
+        for(int i = 1; i < 10; i++){
+            for(int j = 1; j < 10; j++){
+                initCells.add(new Cell(j,i));
+            }
         }
-      }
-      reorderCells(changedCells);
-      result = !changedCells.isEmpty();
+        this.cells = initCells;
     }
-  }
 
-  private void checkCellsWithSinglePossibleNumber() {
-    Iterator<Cell> cellIterator = cells.stream().filter(cell -> cell.possibleNumbersSize() == 1).iterator();
+    public void setCellValue(int x, int y, int value){
+        this.cells.get(x - 1 + (y - 1) * 9).setCell(x, y, value);
 
-    while (cellIterator.hasNext()) {
-      Cell firstCell = cellIterator.next();
-      Byte value = firstCell.getPossibleNumbers().stream().findFirst().get();
-      Set<Cell> updatedCells = firstCell.setNumberValue(value);
-      reorderCells(updatedCells);
-      cellIterator = cells.stream().filter(cell -> cell.possibleNumbersSize() == 1).iterator();
     }
-  }
 
-  private void removeNumbersFromCells(Set<Cell> changedCellsCollector, Set<Cell> cells, Set<Byte> numbers) {
-    for(Cell cell: cells) {
-      for (Byte number : numbers) {
-        if (cell.removePossibleNumber(number))
-          changedCellsCollector.add(cell);
-      }
+    public void recalcCell(Cell a){
+        a.possibleValues.clear();
+        for(int i = 1; i < 10; i++){
+            if(fitTest(a, i)){
+                a.possibleValues.add(i);
+            }
+        }
     }
-  }
 
-  public void print() {
-    String sep = getSeparatorLane();
-    System.out.println(sep);
-    for(Lane lane: hlanes) {
-      System.out.println(lane.toString());
-      System.out.println(sep);
+    public boolean fitTest(Cell a, int n){
+        List<Cell> horiz = cells.stream().filter(c->c.getY()==a.getY()).collect(Collectors.toList());
+        List<Cell> vert = cells.stream().filter(c->c.getX()==a.getX()).collect(Collectors.toList());
+        List<Cell> sq = cells.stream().filter(c->c.getSquare()==a.getSquare()).collect(Collectors.toList());
+        for (Cell ce : horiz) {
+            if(ce.getVal() == n){
+                return false;
+            }
+        }
+        for (Cell ce : vert) {
+            if(ce.getVal() == n){
+                return false;
+            }
+        }
+
+        for (Cell ce : sq) {
+            if(ce.getVal() == n){
+                return false;
+            }
+        }
+        return true;
     }
-  }
 
-  private static String getSeparatorLane() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("|");
-    sb.append("-".repeat(79 + 10));
-    sb.append("|");
-    return sb.toString();
-  }
+    public List<Cell> solveLVL1(){
+        this.cells.stream().filter(cell -> cell.getVal()==0).forEach(cel-> this.recalcCell(cel));
 
+        List<Cell> easyCells = cells.stream().filter(c->c.possibleValues.size() == 1).collect(Collectors.toList());
+        for (Cell cel : easyCells) {
+            cel.setValue(cel.possibleValues.get(0));
+        }
+        return easyCells;
+    }
+
+    public boolean isLast(){
+        for (Cell cell : this.cells) {
+            if(cell.getVal() == 0){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public int solving(){
+        solveLVL1();
+        
+        for (Cell cell : this.cells) {
+            if(cell.getVal() == 0){
+                for (int i = 0; i < 10;i++) {
+                    if(fitTest(cell, i)){
+                        cell.setValue(i);
+                        solving();
+                    }
+                }
+                if(!isLast()){
+                    cell.setValue(0);
+
+                    for (Cell easyCell : solveLVL1()) {
+                        easyCell.setValue(0);
+                    }
+                    
+                }
+                return 0;
+            }
+        }
+        return 0;
+
+    }
+
+
+    /*
+     I want to make the solving process more efficient by only looping thrrough possible values instead of all 1 through 9,
+     But it gives me an error because I am looping through possible values and at the same time altering them
+
+     * public int solving(){
+        solveLVL1();
+        this.cells.stream().filter(cell -> cell.getVal()==0).forEach(cel-> this.recalcCell(cel));
+
+        for (Cell cell : this.cells) {
+            if(cell.getVal() == 0){
+                for (int i: cell.possibleValues) {
+                    if(fitTest(cell, i)){
+                        cell.setValue(i);
+                        solving();
+                    }
+                }
+
+                if(!isLast()){
+                    cell.setValue(0);
+
+                    for (Cell easyCell : solveLVL1()) {
+                        easyCell.setValue(0);
+                    }
+                    
+                }
+                return 0;
+            }
+        }
+        return 0;
+
+    }
+     */
+
+    public void solution(){
+        for (Cell cell : this.cells) {
+            System.out.print(cell.getVal() + " ");
+            if(cell.getX()==9){
+                System.out.println();
+            }
+        }
+        System.out.println();
+
+    }
+
+    
 }
