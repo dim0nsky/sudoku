@@ -7,9 +7,9 @@ public class Cell {
     private int y;
     private int x;
     private int value;
-    public List<Integer> possibleValues;
+    private List<Integer> possibleValues;
     private byte square;
-    public byte id;
+    private byte id;
 
     public Cell(int x, int y){
         this.x = x;
@@ -37,7 +37,7 @@ public class Cell {
         return this.y;
     }
 
-    public int getVal(){
+    public int getValue(){
         return this.value;
     }
 
@@ -53,11 +53,23 @@ public class Cell {
         return this.id;
     }
 
-    public void printPossVals(){
+    public void printPossibleValues(){
         System.out.print(this.x + " " + this.y + " square:" + this.square + "||");
         for(int val: possibleValues){
             System.out.print(val + " |");
         }
+    }
+
+    public void addPossibleValue(int value){
+        this.possibleValues.add(value);
+    }
+
+    public void clearPossibleValues(){
+        this.possibleValues.clear();
+    }
+
+    public List<Integer> getPossibleValues(){
+        return this.possibleValues;
     }
 
 }

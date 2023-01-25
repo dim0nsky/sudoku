@@ -7,7 +7,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class Sudoku {
-    public List<Cell> cells;
+    private List<Cell> cells;
 
     public Sudoku(){
         List<Cell> initCells = new ArrayList<Cell>();
@@ -25,10 +25,10 @@ public class Sudoku {
     }
 
     public void recalcCell(Cell a){
-        a.possibleValues.clear();
+        a.clearPossibleValues();
         for(int i = 1; i < 10; i++){
             if(fitTest(a, i)){
-                a.possibleValues.add(i);
+                a.addPossibleValue(i);
             }
         }
     }
@@ -38,18 +38,18 @@ public class Sudoku {
         List<Cell> vert = cells.stream().filter(c->c.getX()==a.getX()).collect(Collectors.toList());
         List<Cell> sq = cells.stream().filter(c->c.getSquare()==a.getSquare()).collect(Collectors.toList());
         for (Cell ce : horiz) {
-            if(ce.getVal() == n){
+            if(ce.getValue() == n){
                 return false;
             }
         }
         for (Cell ce : vert) {
-            if(ce.getVal() == n){
+            if(ce.getValue() == n){
                 return false;
             }
         }
 
         for (Cell ce : sq) {
-            if(ce.getVal() == n){
+            if(ce.getValue() == n){
                 return false;
             }
         }
@@ -57,18 +57,18 @@ public class Sudoku {
     }
 
     public List<Cell> solveLVL1(){
-        this.cells.stream().filter(cell -> cell.getVal()==0).forEach(cel-> this.recalcCell(cel));
+        this.cells.stream().filter(cell -> cell.getValue()==0).forEach(cel-> this.recalcCell(cel));
 
-        List<Cell> easyCells = cells.stream().filter(c->c.possibleValues.size() == 1).collect(Collectors.toList());
+        List<Cell> easyCells = cells.stream().filter(c->c.getPossibleValues().size() == 1).collect(Collectors.toList());
         for (Cell cel : easyCells) {
-            cel.setValue(cel.possibleValues.get(0));
+            cel.setValue(cel.getPossibleValues().get(0));
         }
         return easyCells;
     }
 
     public boolean isLast(){
         for (Cell cell : this.cells) {
-            if(cell.getVal() == 0){
+            if(cell.getValue() == 0){
                 return false;
             }
         }
@@ -79,7 +79,7 @@ public class Sudoku {
         solveLVL1();
         
         for (Cell cell : this.cells) {
-            if(cell.getVal() == 0){
+            if(cell.getValue() == 0){
                 for (int i = 0; i < 10;i++) {
                     if(fitTest(cell, i)){
                         cell.setValue(i);
@@ -137,7 +137,7 @@ public class Sudoku {
 
     public void solution(){
         for (Cell cell : this.cells) {
-            System.out.print(cell.getVal() + " ");
+            System.out.print(cell.getValue() + " ");
             if(cell.getX()==9){
                 System.out.println();
             }
