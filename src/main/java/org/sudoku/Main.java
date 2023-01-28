@@ -5,16 +5,11 @@ public class Main {
     public static void main(String[] args) {
         
             Sudoku puzzle = new Sudoku();
-            puzzle.solution();
-            System.out.println();
 
             puzzle146(puzzle);
-            puzzle.solution();
-            System.out.println();
-
             puzzle.solving();
             puzzle.solution();
-            System.out.println();
+
             
         }
 

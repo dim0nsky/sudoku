@@ -67,16 +67,11 @@ public class Sudoku {
     }
 
     public boolean isLast(){
-        for (Cell cell : this.cells) {
-            if(cell.getValue() == 0){
-                return false;
-            }
-        }
-        return true;
+        return this.cells.stream().noneMatch(t -> t.getValue() == 0);
     }
 
-    public int solving(){
-        solveLVL1();
+    public void solving(){
+        List<Cell>easyCells = solveLVL1();
         
         for (Cell cell : this.cells) {
             if(cell.getValue() == 0){
@@ -89,15 +84,13 @@ public class Sudoku {
                 if(!isLast()){
                     cell.setValue(0);
 
-                    for (Cell easyCell : solveLVL1()) {
-                        easyCell.setValue(0);
-                    }
+                    easyCells.stream().forEach(element->element.setValue(0));
                     
                 }
-                return 0;
+                return;
             }
         }
-        return 0;
+        return;
 
     }
 
