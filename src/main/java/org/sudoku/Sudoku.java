@@ -94,40 +94,6 @@ public class Sudoku {
 
     }
 
-
-    /*
-     I want to make the solving process more efficient by only looping thrrough possible values instead of all 1 through 9,
-     But it gives me an error because I am looping through possible values and at the same time altering them
-
-     * public int solving(){
-        solveLVL1();
-        this.cells.stream().filter(cell -> cell.getVal()==0).forEach(cel-> this.recalcCell(cel));
-
-        for (Cell cell : this.cells) {
-            if(cell.getVal() == 0){
-                for (int i: cell.possibleValues) {
-                    if(fitTest(cell, i)){
-                        cell.setValue(i);
-                        solving();
-                    }
-                }
-
-                if(!isLast()){
-                    cell.setValue(0);
-
-                    for (Cell easyCell : solveLVL1()) {
-                        easyCell.setValue(0);
-                    }
-                    
-                }
-                return 0;
-            }
-        }
-        return 0;
-
-    }
-     */
-
     public void solution(){
         for (Cell cell : this.cells) {
             System.out.print(cell.getValue() + " ");
