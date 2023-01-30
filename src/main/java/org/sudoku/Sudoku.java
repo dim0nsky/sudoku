@@ -75,9 +75,9 @@ public class Sudoku {
         
         for (Cell cell : this.cells) {
             if(cell.getValue() == 0){
-                for (int i = 0; i < 10;i++) {
-                    if(fitTest(cell, i)){
-                        cell.setValue(i);
+                for (int value : cell.getPossibleValues()) {
+                    if(fitTest(cell, value)){
+                        cell.setValue(value);
                         solving();
                     }
                 }
