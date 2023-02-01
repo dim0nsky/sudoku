@@ -72,6 +72,24 @@ public class Sudoku {
 
     public void solving(){
         List<Cell>easyCells = solveLVL1();
+        /* 
+        this.cells.stream().filter(c -> c.getValue() == 0).forEach(
+            cel -> {
+                for (int value : cel.getPossibleValues()) {
+                    if(fitTest(cel, value)){
+                        cel.setValue(value);
+                        solving();
+                    }
+                }
+                if(!isLast()){
+                    cel.setValue(0);
+                    easyCells.stream().forEach(element->element.setValue(0));
+                    
+                }
+                return;
+            
+        });
+        */
         
         for (Cell cell : this.cells) {
             if(cell.getValue() == 0){
@@ -83,13 +101,12 @@ public class Sudoku {
                 }
                 if(!isLast()){
                     cell.setValue(0);
-
                     easyCells.stream().forEach(element->element.setValue(0));
                     
                 }
                 return;
             }
-        }
+        }    
         return;
 
     }
