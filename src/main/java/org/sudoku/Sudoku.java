@@ -34,26 +34,9 @@ public class Sudoku {
     }
 
     public boolean fitTest(Cell a, int n){
-        List<Cell> horiz = cells.stream().filter(c->c.getY()==a.getY()).collect(Collectors.toList());
-        List<Cell> vert = cells.stream().filter(c->c.getX()==a.getX()).collect(Collectors.toList());
-        List<Cell> sq = cells.stream().filter(c->c.getSquare()==a.getSquare()).collect(Collectors.toList());
-        for (Cell ce : horiz) {
-            if(ce.getValue() == n){
-                return false;
-            }
-        }
-        for (Cell ce : vert) {
-            if(ce.getValue() == n){
-                return false;
-            }
-        }
-
-        for (Cell ce : sq) {
-            if(ce.getValue() == n){
-                return false;
-            }
-        }
-        return true;
+        return cells.stream().filter(c->c.getY()==a.getY()).noneMatch(v -> v.getValue() == n) && 
+        cells.stream().filter(c->c.getX()==a.getX()).noneMatch(v -> v.getValue() == n) &&
+        cells.stream().filter(c->c.getSquare()==a.getSquare()).noneMatch(v -> v.getValue() == n);
     }
 
     public List<Cell> solveLVL1(){
@@ -72,24 +55,6 @@ public class Sudoku {
 
     public void solving(){
         List<Cell>easyCells = solveLVL1();
-        /* 
-        this.cells.stream().filter(c -> c.getValue() == 0).forEach(
-            cel -> {
-                for (int value : cel.getPossibleValues()) {
-                    if(fitTest(cel, value)){
-                        cel.setValue(value);
-                        solving();
-                    }
-                }
-                if(!isLast()){
-                    cel.setValue(0);
-                    easyCells.stream().forEach(element->element.setValue(0));
-                    
-                }
-                return;
-            
-        });
-        */
         
         for (Cell cell : this.cells) {
             if(cell.getValue() == 0){
